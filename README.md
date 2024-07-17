@@ -134,7 +134,7 @@ This endpoint allows:
 
 ### `authorship` field
 
-This field is added to the endpoint for all suported post types (by default, ones which that have post type support for `author`), for example `wp/v2/posts`. This field is readable and writable and accepts and provides an array of IDs of users attributed to the post.
+This field is added to the endpoint for all supported post types (by default, ones which that have post type support for `author`), for example `wp/v2/posts`. This field is readable and writable and accepts and provides an array of IDs of users attributed to the post.
 
 In addition, user objects are embedded in the `_embedded['wp:authorship']` field in the response if `_embed` is set and the authenticated user can list users.
 
