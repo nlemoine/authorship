@@ -360,7 +360,7 @@ class Migrate_Command extends WP_CLI_Command {
 		// If this fails we want the debug data, so print out the
 		// arguments so we can reproduce later.
 		if ( is_wp_error( $ppa_user_id ) ) {
-			WP_CLI::error( 'Could not create Authorship user with these arguments:' );
+			WP_CLI::error( 'Could not create Authorship user with these arguments:', false );
 			WP_CLI::error( $ppa_user_id );
 		}
 
