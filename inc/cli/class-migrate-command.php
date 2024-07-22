@@ -259,7 +259,8 @@ class Migrate_Command extends WP_CLI_Command {
 				// Usually invalid taxonomy, lets catch and report this.
 				if ( is_wp_error( $ppa_terms ) ) {
 					WP_CLI::error( 'There was an error fetching the PublishPress Author data, is the plugin activated?', false );
-					WP_CLI::error( $ppa_terms );
+					WP_CLI::error( $ppa_terms, false );
+					exit;
 				}
 
 				/**
@@ -361,7 +362,8 @@ class Migrate_Command extends WP_CLI_Command {
 		// arguments so we can reproduce later.
 		if ( is_wp_error( $ppa_user_id ) ) {
 			WP_CLI::error( 'Could not create Authorship user with these arguments:', false );
-			WP_CLI::error( $ppa_user_id );
+			WP_CLI::error( $ppa_user_id, false );
+			exit;
 		}
 
 		return $ppa_user_id;
