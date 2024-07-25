@@ -59,6 +59,7 @@ function bootstrap() : void {
 	add_filter( 'the_author', __NAMESPACE__ . '\\filter_the_author_for_rss' );
 	add_filter( 'comment_moderation_recipients', __NAMESPACE__ . '\\filter_comment_moderation_recipients', 10, 2 );
 	add_filter( 'comment_notification_recipients', __NAMESPACE__ . '\\filter_comment_notification_recipients', 10, 2 );
+	add_filter( 'quick_edit_dropdown_authors_args', __NAMESPACE__ . '\\hide_quickedit_authors' );
 	add_filter( 'wp_insert_term_data', __NAMESPACE__ . '\\add_term_name', 10, 3 );
 }
 
@@ -111,9 +112,9 @@ function update_author_term_name( int $user_id, WP_User $old_user_data, array $u
 		return;
 	}
 
-	wp_update_term($term->term_id, TAXONOMY, [
+	wp_update_term( $term->term_id, TAXONOMY, [
 		'name' => $userdata['display_name'],
-	]);
+	] );
 }
 
 /**
@@ -808,4 +809,19 @@ function filter_comment_notification_recipients( array $emails, int $comment_id 
 	}, $authors ) );
 
 	return array_unique( array_merge( $emails, $additional_emails ) );
+}
+
+/**
+ * Hide author select from quick edit.
+ *
+ * Bit of a hack, but filter filter_quickedit_authors and include only author with ID 0.
+ * Also hide if only one author just in case someone someone has created author with 0.
+ *
+ * @param array<string, mixed> $options Options.
+ * @return array<string, mixed> Filtered options.
+ */
+function hide_quickedit_authors( array $options ) : array {
+	$options['hide_if_only_one_author'] = true;
+	$options['include'] = [ 0 ];
+	return $options;
 }
