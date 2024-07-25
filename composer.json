@@ -31,6 +31,9 @@
       "ergebnis/composer-normalize": true,
       "roots/wordpress-core-installer": true
     },
+    "platform": {
+      "php": "7.4"
+    },
     "preferred-install": "dist",
     "sort-packages": true
   },
