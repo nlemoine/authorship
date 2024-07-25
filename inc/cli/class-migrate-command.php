@@ -49,6 +49,12 @@ class Migrate_Command extends WP_CLI_Command {
 	 *   - false
 	 * ---
 	 *
+	 * [--post-type=<post-type>]
+	 * : Post type, or comma separated list of post types.
+	 * ---
+	 * default: post
+	 * ---
+	 *
 	 * ## EXAMPLES
 	 *
 	 *     wp authorship migrate wp-authors --dry-run=true
@@ -79,6 +85,9 @@ class Migrate_Command extends WP_CLI_Command {
 			WP_CLI::warning( 'Overwriting of previous Authorship data is set to true.' );
 		}
 
+		$post_types = explode( ',', $assoc_args['post-type'] );
+		WP_CLI::line( sprintf( 'Updating post types: %s', implode( ', ', $post_types ) ) );
+
 		$tax_query = $overwrite ? [] : [
 			[
 				'taxonomy' => 'authorship',
@@ -93,6 +102,7 @@ class Migrate_Command extends WP_CLI_Command {
 			$posts = get_posts( [
 				'posts_per_page'      => $posts_per_page,
 				'paged'               => $paged,
+				'post_type'           => $post_types,
 				'post_status'         => 'any',
 				'ignore_sticky_posts' => true,
 				'suppress_filters'    => false,
@@ -249,8 +259,8 @@ class Migrate_Command extends WP_CLI_Command {
 				// Usually invalid taxonomy, lets catch and report this.
 				if ( is_wp_error( $ppa_terms ) ) {
 					WP_CLI::error( 'There was an error fetching the PublishPress Author data, is the plugin activated?', false );
-					WP_CLI::error( $ppa_terms );
-					exit;
+					WP_CLI::error( $ppa_terms, false );
+					exit( 1 );
 				}
 
 				/**
@@ -351,9 +361,9 @@ class Migrate_Command extends WP_CLI_Command {
 		// If this fails we want the debug data, so print out the
 		// arguments so we can reproduce later.
 		if ( is_wp_error( $ppa_user_id ) ) {
-			WP_CLI::error( 'Could not create Authorship user with these arguments:' );
-			WP_CLI::error( $ppa_user_id );
-			return -1;
+			WP_CLI::error( 'Could not create Authorship user with these arguments:', false );
+			WP_CLI::error( $ppa_user_id, false );
+			exit( 1 );
 		}
 
 		return $ppa_user_id;

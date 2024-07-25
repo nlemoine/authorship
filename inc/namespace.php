@@ -37,6 +37,8 @@ const STYLE_HANDLE = 'authorship-css';
  * Bootstraps the main actions and filters.
  */
 function bootstrap() : void {
+	$insert_post_handler = new InsertPostHandler();
+
 	// Actions.
 	add_action( 'init', __NAMESPACE__ . '\\init_taxonomy', 99 );
 	add_action( 'init', __NAMESPACE__ . '\\register_roles_and_caps', 1 );
@@ -44,9 +46,10 @@ function bootstrap() : void {
 	add_action( 'enqueue_block_editor_assets', __NAMESPACE__ . '\\enqueue_assets' );
 	add_action( 'pre_get_posts', __NAMESPACE__ . '\\action_pre_get_posts', 9999 );
 	add_action( 'wp', __NAMESPACE__ . '\\action_wp' );
+	add_action( 'wp_insert_post', [ $insert_post_handler, 'action_wp_insert_post' ], 10, 3 );
 
 	// Filters.
-	add_filter( 'wp_insert_post_data', __NAMESPACE__ . '\\filter_wp_insert_post_data', 10, 3 );
+	add_filter( 'wp_insert_post_data', [ $insert_post_handler, 'filter_wp_insert_post_data' ], 10, 3 );
 	add_filter( 'rest_request_after_callbacks', __NAMESPACE__ . '\\filter_rest_request_after_callbacks', 10, 3 );
 	add_filter( 'map_meta_cap', __NAMESPACE__ . '\\filter_map_meta_cap_for_editing', 10, 4 );
 	add_filter( 'user_has_cap', __NAMESPACE__ . '\\filter_user_has_cap', 10, 4 );
@@ -54,6 +57,7 @@ function bootstrap() : void {
 	add_filter( 'the_author', __NAMESPACE__ . '\\filter_the_author_for_rss' );
 	add_filter( 'comment_moderation_recipients', __NAMESPACE__ . '\\filter_comment_moderation_recipients', 10, 2 );
 	add_filter( 'comment_notification_recipients', __NAMESPACE__ . '\\filter_comment_notification_recipients', 10, 2 );
+	add_filter( 'quick_edit_dropdown_authors_args', __NAMESPACE__ . '\\hide_quickedit_authors' );
 }
 
 /**
@@ -328,71 +332,6 @@ function filter_rest_request_after_callbacks( $result, array $handler, WP_REST_R
 	}
 
 	return $result;
-}
-
-/**
- * Filters slashed post data just before it is inserted into the database.
- *
- * @param mixed[] $data                An array of slashed, sanitized, and processed post data.
- * @param mixed[] $postarr             An array of sanitized (and slashed) but otherwise unmodified post data.
- * @param mixed   $unsanitized_postarr An array (or object that implements array access, like a WP_Post) of
- *                                     slashed yet _unsanitized_ and unprocessed post data as originally passed
- *                                     to wp_insert_post().
- * @return mixed[] An array of slashed, sanitized, and processed post data.
- */
-function filter_wp_insert_post_data( array $data, array $postarr, $unsanitized_postarr ) : array {
-
-	// Make sure the unsanitized post array is actually an array. Core sometimes passes it as a WP_Post object.
-	if ( ! is_array( $unsanitized_postarr ) ) {
-		$unsanitized_postarr = (array) $unsanitized_postarr;
-	}
-
-	/**
-	 * Fires once a post has been saved.
-	 *
-	 * @param int     $post_ID Post ID.
-	 * @param WP_Post $post    Post object.
-	 * @param bool    $update  Whether this is an existing post being updated.
-	 */
-	add_action( 'wp_insert_post', function( int $post_ID, WP_Post $post, bool $update ) use ( $unsanitized_postarr ) : void {
-		if ( isset( $unsanitized_postarr['tax_input'] ) && ! empty( $unsanitized_postarr['tax_input'][ TAXONOMY ] ) ) {
-			return;
-		}
-
-		$existing_authors = get_authors( $post );
-
-		if ( $update && ! isset( $unsanitized_postarr[ POSTS_PARAM ] ) && $existing_authors ) {
-			return;
-		}
-
-		if ( isset( $unsanitized_postarr[ POSTS_PARAM ] ) ) {
-			$authors = $unsanitized_postarr[ POSTS_PARAM ];
-		} else {
-			/**
-			 * Set the default authorship author. Defaults to the orignal post author.
-			 *
-			 * @param array $authors Authors to add to a post on insert if none have been passed. Default to post author.
-			 * @param WP_Post $post Post object.
-			 */
-			$authors = array_filter( apply_filters(
-				'authorship_default_author',
-				[ isset( $unsanitized_postarr['post_author'] ) ? $unsanitized_postarr['post_author'] : null ],
-				$post
-			) );
-		}
-
-		if ( empty( $authors ) ) {
-			return;
-		}
-
-		try {
-			set_authors( $post, wp_parse_id_list( $authors ) );
-		} catch ( Exception $e ) {
-			// Nothing at the moment.
-		}
-	}, 10, 3 );
-
-	return $data;
 }
 
 /**
@@ -813,4 +752,19 @@ function filter_comment_notification_recipients( array $emails, int $comment_id 
 	}, $authors ) );
 
 	return array_unique( array_merge( $emails, $additional_emails ) );
+}
+
+/**
+ * Hide author select from quick edit.
+ *
+ * Bit of a hack, but filter filter_quickedit_authors and include only author with ID 0.
+ * Also hide if only one author just in case someone someone has created author with 0.
+ *
+ * @param array $options Options.
+ * @return array Options.
+ */
+function hide_quickedit_authors( array $options ) : array {
+	$users_opt['hide_if_only_one_author'] = true;
+	$users_opt['include'] = [ 0 ];
+	return $users_opt;
 }
