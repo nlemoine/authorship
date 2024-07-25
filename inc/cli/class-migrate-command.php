@@ -260,7 +260,7 @@ class Migrate_Command extends WP_CLI_Command {
 				if ( is_wp_error( $ppa_terms ) ) {
 					WP_CLI::error( 'There was an error fetching the PublishPress Author data, is the plugin activated?', false );
 					WP_CLI::error( $ppa_terms, false );
-					exit;
+					exit( 1 );
 				}
 
 				/**
