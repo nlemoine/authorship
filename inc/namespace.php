@@ -760,11 +760,11 @@ function filter_comment_notification_recipients( array $emails, int $comment_id 
  * Bit of a hack, but filter filter_quickedit_authors and include only author with ID 0.
  * Also hide if only one author just in case someone someone has created author with 0.
  *
- * @param array $options Options.
- * @return array Options.
+ * @param array<string, mixed> $options Options.
+ * @return array<string, mixed> Filtered options.
  */
 function hide_quickedit_authors( array $options ) : array {
-	$users_opt['hide_if_only_one_author'] = true;
-	$users_opt['include'] = [ 0 ];
-	return $users_opt;
+	$options['hide_if_only_one_author'] = true;
+	$options['include'] = [ 0 ];
+	return $options;
 }
